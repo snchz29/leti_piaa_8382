@@ -25,24 +25,29 @@ if __name__ == "__main__":
         else:
             graph[u][v] = float(c)
 #   Алгоритм А*
-    closedset = []
-    openset = []
+#   инициализируем вспомогательные множества и словари
+    closedset = [] # посещенные вершины
+    openset = [] # раскрытые для рассмотрения вершины
     openset.append(start)
-    print(start,"append to openset")
+    print(start,"append START to openset")
     print("openset:", openset)
-    fromset = {}
-    g = {}
+    fromset = {} # словарь оптимальных переходов
+    g = {} # стоимости путей из начальной вершины
     g[start] = 0
-    f = {}
+    f = {} # = стоимость пути из начала плюс значение эвристической функции
     f[start] = g[start] + h(start, finish)
+#   пока множество раскрытых вершин не опустеет
     while len(openset) > 0:
 #       поиск минимального по f
         curr = openset[0]
         for u in openset:
             if f[curr] > f[u]:
                 curr = u
+        print("Take minimal f(",curr,") =", f[curr], "from", f)
+#       предварительный выход
         if curr == finish:
             break
+#       извлекаем рассмотренную вершину и добавляем ее в посещенные
         openset.pop(openset.index(curr))
         print(curr, "pop from openset")
         print("openset:", openset)
@@ -50,22 +55,22 @@ if __name__ == "__main__":
         print(curr, "append to closedset")
         print("closedset:", closedset)
         if (curr in graph.keys()):
+#           просмотр соседей 
             for neib in graph[curr]:
-                # print(graph[curr][neib])
                 if neib in closedset:
-                    continue
-                tentScore = g[curr] + graph[curr][neib]
+                    continue # если сосед просмотрен, то переход к следующему
+                tentScore = g[curr] + graph[curr][neib] # ожидаемый кратчайший путь из начала
                 if neib not in openset:
-                    openset.append(neib)
-                    print(neib, "append to openset")
+                    openset.append(neib) # добавление соседа в раскрытые вершины если его там нет
+                    print(neib, "neighbour of", curr, "append to openset")
                     print("openset:", openset)
-                    tentIsBetter = True
+                    tentIsBetter = True # если соседа не рассматривали, то естественно путь стал лучше
                 else:
-                    tentIsBetter = True if tentScore < g[neib] else False
-                if tentIsBetter:
+                    tentIsBetter = True if tentScore < g[neib] else False # если рассматривали то нужно разобраться -- стал путь короче или нет
+                if tentIsBetter: # если путь до соседа стал короче то добавляем ребро в соответствующий словарь
                     fromset[neib] = curr
                     print("To", neib, "from", curr)
                     print("fromset",fromset)
-                    g[neib] = tentScore
+                    g[neib] = tentScore # и обновляем словари g и f 
                     f[neib] = g[neib] + h(neib, finish)
-    print(" ".join(map(str, recPath(fromset, start, finish))))
+    print(" ".join(map(str, recPath(fromset, start, finish)))) # восстанавливаем путь пользуясь тривиальной функцией
