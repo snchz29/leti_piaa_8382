@@ -1,10 +1,11 @@
 from math import inf
 import copy
 
-stepik = False
+stepik = True
 
 
 def changeable_path(graph, reversed_graph, start, finish):
+    # функция на основе алгоритма А* из прошлой лабы
     path = [start]
     bad_nodes = []
     while path[-1] != finish:
@@ -38,7 +39,7 @@ def changeable_path(graph, reversed_graph, start, finish):
     return path
 
 
-def main():
+def read_input():
     n = int(input())  # количество ребер
     start = input()[0]  # исток
     finish = input()[0]  # сток
@@ -54,6 +55,54 @@ def main():
             flows[v[0]][u[0]] = 0  # если из данной вершины уже был какой-либо путь то расширяем словарь
         else:
             flows[v[0]] = {u[0]: 0}  # иначе создаем первый путь
+    return n, start, finish, graph, flows
+
+
+def minimal_flow(graph, flows, path):
+    flow = inf
+    for i in range(len(path) - 1):
+        # если движение в естественном направлении, то сравнение с пропускной способностью
+        try:
+            if graph[path[i]][path[i + 1]] < flow:
+                flow = graph[path[i]][path[i + 1]]
+        # иначе с потоком
+        except KeyError:
+            if flows[path[i]][path[i + 1]] < flow:
+                flow = flows[path[i]][path[i + 1]]
+    if not stepik:
+        print("Minimal flow: ", flow)
+    return flow
+
+
+def opt_bidirectional(flows):
+    for u in flows:
+        for v in flows[u]:
+            if v in flows and u in flows[v] and flows[u][v] and flows[v][u]: # если существуют ненулевые потоки в разные стороны
+                if flows[u][v] > flows[v][u]:
+                    if not stepik:
+                        print("Flow <{} {}> increased by {}".format(u, v, flows[v][u]))
+                    flows[u][v] -= flows[v][u]
+                    flows[v][u] = 0
+                else:
+                    if not stepik:
+                        print("Flow <{} {}> increased by {}".format(v, u, flows[u][v]))
+                    flows[v][u] -= flows[u][v]
+                    flows[u][v] = 0
+    return flows
+
+
+def answer(graph, flows, max_flow):
+    list_answer = []
+    for u in graph:
+        for v in graph[u]:
+            list_answer.append(str(u) + " " + str(v) + " " + str(flows[v][u]))
+    list_answer = sorted(list_answer)
+    print(max_flow)
+    [print(ans) for ans in list_answer]
+
+
+def main():
+    n, start, finish, graph, flows = read_input()
     if not stepik:
         print("Graph: ", graph)
         print("Flows: ", flows)
@@ -68,18 +117,7 @@ def main():
         if not path:
             break
         # поиск дуги с минимальной пропускной способностью или потоком
-        flow = inf
-        for i in range(len(path) - 1):
-            # если движение в естественном направлении, то сравнение с пропускной способностью
-            try:
-                if new_graph[path[i]][path[i + 1]] < flow:
-                    flow = new_graph[path[i]][path[i + 1]]
-            # иначе с потоком
-            except KeyError:
-                if new_flows[path[i]][path[i + 1]] < flow:
-                    flow = new_flows[path[i]][path[i + 1]]
-        if not stepik:
-            print("Minimal flow: ", flow)
+        flow = minimal_flow(graph, flows, path)
         for i in range(len(path) - 1):
             # уменьшаем пропускные способности и увеличиваем потоки всех дуг чередующейся цепи, если по дуге
             try:
@@ -103,28 +141,9 @@ def main():
         # иначе обновляем графы
         else:
             break
-    # оптимизация двунаправленных дуг
-    for u in flows:
-        for v in flows[u]:
-            if v in flows and u in flows[v] and flows[u][v] and flows[v][u]:
-                if flows[u][v] > flows[v][u]:
-                    if not stepik:
-                        print("Flow <{} {}> increased by {}".format(u, v, flows[v][u]))
-                    flows[u][v] -= flows[v][u]
-                    flows[v][u] = 0
-                else:
-                    if not stepik:
-                        print("Flow <{} {}> increased by {}".format(v, u, flows[u][v]))
-                    flows[v][u] -= flows[u][v]
-                    flows[u][v] = 0
-    # составление ответа
-    list_answer = []
-    for u in graph:
-        for v in graph[u]:
-            list_answer.append(str(u) + " " + str(v) + " " + str(flows[v][u]))
-    list_answer = sorted(list_answer)
-    print(sum(flows[finish].values()))
-    [print(ans) for ans in list_answer]
+    # оптимизация двунаправленных дуг, у которых ненулевые потоки
+    flows = opt_bidirectional(flows)
+    answer(graph, flows, sum(flows[finish].values()))
 
 
 if __name__ == "__main__":
